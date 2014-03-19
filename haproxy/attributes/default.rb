@@ -19,6 +19,10 @@ default[:haproxy][:http_request_timeout] = '30s'
 default[:haproxy][:global_max_connections] = '80000'
 default[:haproxy][:default_max_connections] = '80000'
 default[:haproxy][:retries] = '3'
+default[:haproxy][:httpclose] = true
+default[:haproxy][:http_server_close] = false
+default[:haproxy][:stats_socket_path] = '/tmp/haproxy.sock'
+default[:haproxy][:stats_socket_level] = nil # nil for default or 'user', 'operator', 'admin'
 
 # load factors for maxcon
 default[:haproxy][:maxcon_factor_rails_app] = 7
@@ -44,3 +48,5 @@ end
 
 default[:haproxy][:stats_password] = random_haproxy_pw
 default[:haproxy][:enable_stats] = false
+
+default[:haproxy][:balance] = 'roundrobin'

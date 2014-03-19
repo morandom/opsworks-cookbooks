@@ -1,5 +1,7 @@
 GC.disable unless node[:opsworks] && node[:opsworks][:instance] && node[:opsworks][:instance][:instance_type] == 't1.micro'
 
+include_attribute "opsworks_commons::default"
+
 # this values must match the ones respective ones in the agent configuration
 default[:opsworks_agent][:base_dir] = '/opt/aws/opsworks'
 default[:opsworks_agent][:current_dir] = "#{node[:opsworks_agent][:base_dir]}/current"
@@ -7,10 +9,6 @@ default[:opsworks_agent][:shared_dir] = '/var/lib/aws/opsworks'
 default[:opsworks_agent][:log_dir] = '/var/log/aws/opsworks'
 default[:opsworks_agent][:user] = 'aws'
 default[:opsworks_agent][:group] = 'aws'
-
-default[:opsworks][:ruby_stack] = 'ruby_enterprise'
-default[:opsworks][:ruby_version] = '1.9.3'
-default[:opsworks][:run_cookbook_tests] = false
 
 default[:opsworks_initial_setup][:sysctl] = Mash.new
 default[:opsworks_initial_setup][:sysctl]['net.core.somaxconn'] = 1024           # 128
@@ -39,14 +37,26 @@ default[:opsworks_initial_setup][:limits][:msgqueue] = nil
 default[:opsworks_initial_setup][:limits][:nice] = nil
 default[:opsworks_initial_setup][:limits][:rtprio] = nil
 
-default[:opsworks_initial_setup][:micro][:yum_dump_lock_timeout] = 120
+default[:opsworks_initial_setup][:yum_dump_lock_timeout] = 120
+
+case node[:platform]
+when 'redhat','centos','fedora','amazon'
+  default[:opsworks_initial_setup][:ephemeral_mount_point] = "/media/ephemeral0"
+when 'debian','ubuntu'
+  default[:opsworks_initial_setup][:ephemeral_mount_point] = "/mnt"
+end
 
 default[:opsworks_initial_setup][:bind_mounts][:mounts] = {
-  "/srv/www" => "/mnt/srv/www",
-  "/var/www" => "/mnt/var/www",
-  "/var/log/apache2" => "/mnt/var/log/apache2",
-  "/var/log/mysql" => "/mnt/var/log/mysql"
+  '/var/log/mysql' => "#{node[:opsworks_initial_setup][:ephemeral_mount_point]}/var/log/mysql",
+  '/srv/www' => "#{node[:opsworks_initial_setup][:ephemeral_mount_point]}/srv/www",
+  '/var/www' => "#{node[:opsworks_initial_setup][:ephemeral_mount_point]}/var/www",
 }
+case node[:platform]
+when 'redhat','centos','fedora','amazon'
+  default[:opsworks_initial_setup][:bind_mounts][:mounts]['/var/log/httpd'] = "#{node[:opsworks_initial_setup][:ephemeral_mount_point]}/var/log/apache2"
+when 'debian','ubuntu'
+  default[:opsworks_initial_setup][:bind_mounts][:mounts]['/var/log/apache2'] = "#{node[:opsworks_initial_setup][:ephemeral_mount_point]}/var/log/apache2"
+end
 
 # landscape removal
 default[:opsworks_initial_setup][:landscape][:packages_to_remove] = ['landscape-common', 'landscape-client']
